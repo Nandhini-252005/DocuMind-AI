@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuMind AI — Document Intelligence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #030712;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; overflow: hidden; position: relative; }
+        
+        .ambient-glow {
+            position: absolute; width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            top: -10%; right: -10%; filter: blur(50px); pointer-events: none;
+        }
+
+        /* Top Navigation Header bar */
+        header { display: flex; justify-content: space-between; align-items: center; padding: 2rem 4rem; position: relative; z-index: 10; }
+        .logo { font-size: 1.75rem; font-weight: 800; background: linear-gradient(to right, #fff, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .hero-container { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 75vh; text-align: center; padding: 2rem; position: relative; z-index: 5; }
+        .feature-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2); padding: 0.6rem 1.2rem; border-radius: 99px; color: #c7d2fe; font-size: 0.85rem; font-weight: 600; margin-bottom: 2rem; opacity: 0; transform: translateY(20px); }
+        
+        h1 { font-size: 5rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 1.5rem; opacity: 0; transform: translateY(20px); }
+        p { color: var(--text-muted); font-size: 1.25rem; max-width: 600px; line-height: 1.7; margin-bottom: 3rem; font-weight: 300; opacity: 0; transform: translateY(20px); }
+        
+        .btn { background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); color: white; border: none; padding: 1rem 2.5rem; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 1.1rem; transition: all 0.3s ease; text-decoration: none; display: inline-block; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5); }
+        .btn-nav { padding: 0.6rem 1.5rem; font-size: 0.9rem; border-radius: 8px; }
+        
+        #try-now-btn-container { opacity: 0; transform: translateY(20px); }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-glow"></div>
+
+    <header>
+        <div class="logo">DocuMind AI</div>
+        <div id="nav-auth-zone">
+            <a href="auth.html" class="btn btn-nav" id="header-action-btn">Sign In / Register</a>
+        </div>
+    </header>
+
+    <div class="hero-container">
+        <div class="feature-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> Next-Generation Document RAG</div>
+        <h1 id="hero-title">Intelligent Document Analytics</h1>
+        <p id="hero-desc">Upload documents and unlock immediate computational answers, localized summaries, and semantic tracking threads seamlessly.</p>
+        <div id="try-now-btn-container">
+            <button class="btn" onclick="handleTryNow()">Try Now <i class="fa-solid fa-arrow-right" style="margin-left:0.5rem"></i></button>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            // Animate landing visuals smoothly on load
+            gsap.to(".feature-badge", { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" });
+            gsap.to("#hero-title", { opacity: 1, y: 0, duration: 0.6, delay: 0.15, ease: "power3.out" });
+            gsap.to("#hero-desc", { opacity: 1, y: 0, duration: 0.6, delay: 0.3, ease: "power3.out" });
+            gsap.to("#try-now-btn-container", { opacity: 1, y: 0, duration: 0.6, delay: 0.45, ease: "power3.out" });
+
+            // Swap navbar button layout context dynamically if logged in
+            const token = localStorage.getItem("token");
+            if(token) {
+                const user = localStorage.getItem("username") || "Account";
+                document.getElementById("nav-auth-zone").innerHTML = `
+                    <span style="margin-right:1.5rem; color:#9ca3af; font-size:0.9rem;"><i class="fa-regular fa-circle-user"></i> ${user}</span>
+                    <button class="btn btn-nav" style="background:#ef4444;" onclick="localStorage.clear(); location.reload();">Sign Out</button>
+                `;
+            }
+        });
+
+        function handleTryNow() {
+            const token = localStorage.getItem("token");
+            if(!token) {
+                // If not logged in, gracefully bounce them to auth.html
+                window.location.href = "auth.html";
+            } else {
+                // Verified user -> step straight into workspace
+                window.location.href = "dashboard.html";
+            }
+        }
+    </script>
+</body>
+</html>

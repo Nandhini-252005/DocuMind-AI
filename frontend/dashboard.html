@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Console Workspace — DocuMind AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #030712;
+            --sidebar-bg: #0b0f19;
+            --border: rgba(255, 255, 255, 0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.35);
+            --accent-hover: #4f46e5;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; display: flex; overflow: hidden; height: 100vh; }
+
+        /* Modern Custom Scrollbar Styling */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+
+        .sidebar { width: 300px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1rem; justify-content: space-between; height: 100vh; }
+        .new-chat-btn { background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); color: white; border: none; border-radius: 10px; padding: 0.85rem 1.2rem; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; font-weight: 600; margin-bottom: 1.5rem; box-shadow: 0 4px 14px var(--accent-glow); }
+        
+        .history-pane { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; }
+        .history-title { font-size: 0.75rem; text-transform: uppercase; tracking: 0.08em; color: var(--text-muted); margin: 0.5rem 0.4rem; font-weight: 700; }
+        .history-item { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.9rem; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #9ca3af; transition: all 0.2s ease; display: flex; align-items: center; gap: 0.75rem; }
+        .history-item.active { background: rgba(99, 102, 241, 0.08); color: #cfd2ff; border: 1px solid rgba(99, 102, 241, 0.2); }
+        
+        .sidebar-footer { border-top: 1px solid var(--border); padding-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+        .dropzone-compact { border: 1px dashed var(--border); border-radius: 10px; padding: 0.75rem; text-align: center; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+        .dropzone-compact:hover { border-color: var(--accent); color: white; }
+
+        /* FIXED: Height parameters locked down to full screen layout values */
+        .workspace-container { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            background-color: var(--bg-dark); 
+            height: 100vh; 
+            position: relative; 
+            overflow: hidden;
+        }
+        
+        .workspace-header { border-bottom: 1px solid var(--border); padding: 1.25rem 2.5rem; display: flex; justify-content: space-between; align-items: center; background: rgba(11, 15, 25, 0.4); backdrop-filter: blur(10px); flex-shrink: 0; }
+        
+        /* FIXED: Independent scroll metrics defined */
+        .chat-scroll-area { 
+            flex: 1; 
+            overflow-y: auto !important; 
+            padding: 1.5rem 0; 
+            display: flex; 
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .chat-thread { max-width: 820px; margin: 0 auto; width: 100%; padding: 0 2rem; display: flex; flex-direction: column; }
+        
+        .bubble-row { display: flex; width: 100%; padding: 2rem 1.5rem; border-radius: 16px; margin-bottom: 0.5rem; position: relative; }
+        .bubble-row.ai { background: rgba(255, 255, 255, 0.015); }
+        .bubble-wrapper { display: flex; gap: 1.5rem; width: 100%; position: relative; }
+        
+        .avatar { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+        .avatar.user { background: #374151; color: #e5e7eb; }
+        .avatar.ai { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: white; }
+        .bubble-text { line-height: 1.7; font-size: 1rem; color: #e5e7eb; white-space: pre-wrap; word-break: break-word; flex: 1; }
+        
+        .copy-trigger { position: absolute; top: -0.5rem; right: 0rem; background: #111827; border: 1px solid var(--border); color: var(--text-muted); padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; opacity: 0; }
+        .bubble-row:hover .copy-trigger { opacity: 1; }
+
+        .input-panel { padding: 1.5rem 2rem; max-width: 820px; margin: 0 auto; width: 100%; flex-shrink: 0; }
+        .input-box-wrapper { display: flex; background: rgba(17, 24, 39, 0.7); border: 1px solid var(--border); border-radius: 16px; padding: 0.85rem 1.25rem; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .input-box-wrapper input { flex: 1; background: transparent; border: none; color: white; outline: none; font-size: 1rem; }
+        .send-icon-btn { background: var(--accent); color: white; border: none; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div>
+            <button class="new-chat-btn" onclick="startNewChat()"><i class="fa-solid fa-plus"></i> New Chat</button>
+            <div class="history-title">Chat Threads</div>
+            <div class="history-pane" id="chat-history-list"></div>
+        </div>
+        <div class="sidebar-footer">
+            <div class="dropzone-compact" onclick="document.getElementById('file-input').click()">
+                <span id="upload-status-text"><i class="fa-solid fa-paperclip"></i> Index Document Asset</span>
+                <input type="file" id="file-input" accept=".pdf" style="display:none" onchange="uploadFile(this.files[0])">
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.5rem; border-top:1px solid var(--border)">
+                <span id="user-display" style="font-size: 0.85rem; color: var(--text-muted);">User</span>
+                <button class="btn" style="padding:0.45rem 0.9rem; font-size:0.8rem; background:#ef4444; border:none; color:white; border-radius:6px; font-weight:600; cursor:pointer;" onclick="logout()">Exit</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="workspace-container">
+        <div class="workspace-header">
+            <h3 id="active-chat-title">New Conversation Workspace</h3>
+            <div id="active-doc-tag" style="font-size:0.75rem; color:#a5b4fc; background:rgba(99,102,241,0.15); padding:0.3rem 0.75rem; border-radius:6px; display:none; font-weight:600;"><i class="fa-solid fa-circle-check"></i> Context Active</div>
+        </div>
+        
+        <div class="chat-scroll-area" id="chat-scroll-pane">
+            <div class="chat-thread" id="chat-stream-output"></div>
+        </div>
+        
+        <div class="input-panel">
+            <div class="input-box-wrapper">
+                <input type="text" id="chat-input" placeholder="Message DocuMind AI..." onkeypress="if(event.key==='Enter') { event.preventDefault(); sendChat(event); }">
+                <button class="send-icon-btn" onclick="sendChat(event)"><i class="fa-solid fa-arrow-up"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "https://documind-api.onrender.com";
+        let token = localStorage.getItem("token") || "";
+        let username = localStorage.getItem("username") || "";
+        let selectedDocId = null;
+
+        if(!token) {
+            window.location.href = "index.html";
+        } else {
+            window.addEventListener("DOMContentLoaded", () => {
+                document.getElementById("user-display").innerText = username;
+                startNewChat();
+                loadSidebarHistoryData();
+                gsap.from("body", { opacity: 0, duration: 0.4 });
+            });
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = "index.html";
+        }
+
+        function stripAsterisks(text) { return text ? text.replace(/\*\*+/g, "").replace(/\*/g, "") : ""; }
+
+        function appendMessageBubble(sender, text) {
+            const container = document.getElementById("chat-stream-output");
+            const cleanText = stripAsterisks(text);
+            const isAI = sender === "ai";
+            const row = document.createElement("div");
+            row.className = `bubble-row ${isAI ? 'ai' : 'user'}`;
+            row.innerHTML = `
+                <div class="bubble-wrapper">
+                    <div class="avatar ${isAI ? 'ai' : 'user'}">${isAI ? 'AI' : 'ME'}</div>
+                    <div class="bubble-text">${cleanText}</div>
+                    ${isAI ? `<button class="copy-trigger"><i class="fa-regular fa-copy"></i> Copy</button>` : ''}
+                </div>
+            `;
+            if(isAI) {
+                row.querySelector(".copy-trigger").onclick = function() {
+                    navigator.clipboard.writeText(cleanText).then(() => {
+                        this.innerHTML = `<i class="fa-solid fa-check" style="color:#22c55e"></i> Copied!`;
+                        setTimeout(() => { this.innerHTML = `<i class="fa-regular fa-copy"></i> Copy`; }, 2000);
+                    });
+                };
+            }
+            container.appendChild(row);
+            gsap.from(row, { opacity:0, y:10, duration:0.3 });
+            
+            // Auto-scrolling calculation trigger
+            const scrollArea = document.getElementById("chat-scroll-pane");
+            scrollArea.scrollTop = scrollArea.scrollHeight;
+        }
+
+        async function loadSidebarHistoryData() {
+            try {
+                const res = await fetch(`${API_BASE}/documents`, { headers: {'Authorization': `Bearer ${token}`} });
+                if(!res.ok) return;
+                const data = await res.json();
+                const listPane = document.getElementById("chat-history-list");
+                listPane.innerHTML = "";
+                data.documents.forEach((doc) => {
+                    const item = document.createElement("div");
+                    item.className = `history-item ${selectedDocId === doc.doc_id ? 'active' : ''}`;
+                    item.innerHTML = `<i class="fa-regular fa-file-pdf"></i><span>${doc.filename.replace(".pdf", "")}</span>`;
+                    item.onclick = async () => {
+                        selectedDocId = doc.doc_id;
+                        document.getElementById("active-chat-title").innerText = doc.filename;
+                        document.getElementById("active-doc-tag").style.display = "block";
+                        await fetchAndRenderChatHistory();
+                        loadSidebarHistoryData();
+                    };
+                    listPane.appendChild(item);
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function fetchAndRenderChatHistory() {
+            try {
+                const res = await fetch(`${API_BASE}/history`, { headers: {'Authorization': `Bearer ${token}`} });
+                const data = await res.json();
+                document.getElementById("chat-stream-output").innerHTML = "";
+                const threadHistory = data.history.filter(h => h.doc_id === selectedDocId).reverse();
+                if(threadHistory.length === 0) {
+                    appendMessageBubble("ai", "Workspace loaded. No past conversation logs found.");
+                } else {
+                    threadHistory.forEach(chat => {
+                        appendMessageBubble("user", chat.question);
+                        appendMessageBubble("ai", chat.answer);
+                    });
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function startNewChat() {
+            selectedDocId = null;
+            document.getElementById("active-chat-title").innerText = "New Conversation Workspace";
+            document.getElementById("active-doc-tag").style.display = "none";
+            document.getElementById("chat-stream-output").innerHTML = "";
+            appendMessageBubble("ai", "Clean thread created. Select a file or upload an asset to activate context!");
+        }
+
+        async function uploadFile(file) {
+            if(!file) return;
+            const dropzoneText = document.getElementById("upload-status-text");
+            dropzoneText.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Loading...`;
+            const formData = new FormData();
+            formData.append("file", file);
+            try {
+                const res = await fetch(`${API_BASE}/upload`, { method: 'POST', headers: {'Authorization': `Bearer ${token}`}, body: formData });
+                const data = await res.json();
+                selectedDocId = data.doc_id;
+                document.getElementById("active-chat-title").innerText = data.filename;
+                document.getElementById("active-doc-tag").style.display = "block";
+                await loadSidebarHistoryData();
+                document.getElementById("chat-stream-output").innerHTML = "";
+                appendMessageBubble("ai", `File parsed successfully!\n\n${data.summary}`);
+            } catch(e) { alert("Upload failed"); }
+            finally { dropzoneText.innerHTML = `<i class="fa-solid fa-paperclip"></i> Index Document Asset`; }
+        }
+
+        async function sendChat(event) {
+            if (event) event.preventDefault();
+            const input = document.getElementById("chat-input");
+            const val = input.value.trim();
+            if(!val) return;
+            appendMessageBubble("user", val);
+            input.value = "";
+            try {
+                const res = await fetch(`${API_BASE}/chat`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({question: val, doc_id: selectedDocId}) });
+                const data = await res.json();
+                appendMessageBubble("ai", data.answer);
+            } catch(e) { appendMessageBubble("ai", "⚠️ Connection error."); }
+        }
+    </script>
+</body>
+</html>

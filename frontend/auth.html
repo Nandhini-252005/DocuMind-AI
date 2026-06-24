@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Identity Hub — DocuMind AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #030712;
+            --border: rgba(255, 255, 255, 0.05);
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --text-muted: #9ca3af;
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background: radial-gradient(circle at center, #1e1b4b 0%, #030712 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 2rem; }
+        
+        .auth-card { background: rgba(11, 15, 25, 0.65); border: 1px solid var(--glass-border); padding: 3rem; border-radius: 24px; backdrop-filter: blur(32px); box-shadow: 0 30px 60px rgba(0,0,0,0.6); max-width: 440px; width: 100%; opacity: 0; transform: scale(0.95); }
+        h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; text-align: left; color: #fff; }
+        
+        .input-group { margin-bottom: 1.5rem; text-align: left; }
+        .input-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.85rem; font-weight: 500; }
+        .input-group input { width: 100%; padding: 0.85rem 1rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; color: white; outline: none; transition: border-color 0.2s; }
+        .input-group input:focus { border-color: var(--accent); }
+        
+        .btn { background: var(--accent); color: white; border: none; padding: 0.9rem; width: 100%; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: background 0.2s; }
+        .btn:hover { background: var(--accent-hover); }
+        .auth-toggle { text-align: center; margin-top: 1.25rem; color: var(--text-muted); font-size: 0.9rem; cursor: pointer; }
+        .auth-toggle:hover { color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-card" id="auth-panel">
+        <h3 id="auth-title">Sign In to Gateway</h3>
+        <div class="input-group">
+            <label>Username</label>
+            <input type="text" id="username" placeholder="Enter username">
+        </div>
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="password" placeholder="••••••••">
+        </div>
+        <button class="btn" id="auth-submit-btn" onclick="handleAuth()">Sign In</button>
+        <p class="auth-toggle" id="auth-toggle-text" onclick="toggleAuthMode()">Don't have an account? Sign Up</p>
+    </div>
+
+    <script>
+        const API_BASE = "https://documind-api.onrender.com";
+        let isLoginMode = true;
+
+        window.addEventListener("DOMContentLoaded", () => {
+            gsap.to("#auth-panel", { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" });
+        });
+
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            gsap.to("#auth-panel", { opacity: 0, y: 10, duration: 0.2, onComplete: () => {
+                document.getElementById("auth-title").innerText = isLoginMode ? "Sign In to Gateway" : "Create Account";
+                document.getElementById("auth-submit-btn").innerText = isLoginMode ? "Sign In" : "Register Account";
+                document.getElementById("auth-toggle-text").innerText = isLoginMode ? "Don't have an account? Sign Up" : "Already have an account? Sign In";
+                gsap.to("#auth-panel", { opacity: 1, y: 0, duration: 0.3 });
+            }});
+        }
+
+        async function handleAuth() {
+            const u = document.getElementById("username").value;
+            const p = document.getElementById("password").value;
+            if(!u || !p) return alert("Please fill in fields");
+
+            const path = isLoginMode ? "/auth/login" : "/auth/signup";
+            try {
+                const res = await fetch(`${API_BASE}${path}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username: u, password: p})
+                });
+                if(!res.ok) throw new Error(await res.text());
+                const data = await res.json();
+                
+                if(isLoginMode) {
+                    localStorage.setItem("token", data.token);
+                    localStorage.setItem("username", data.username);
+                    // SUCCESS: Route back to index.html front landing page flow
+                    window.location.href = "index.html";
+                } else {
+                    alert("Registration successful! Switching to Sign In.");
+                    toggleAuthMode();
+                }
+            } catch(e) { 
+                alert("Auth failed: " + e.message); 
+            }
+        }
+    </script>
+</body>
+</html>

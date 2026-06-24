@@ -1,0 +1,6 @@
+venv/
+uploads/
+documind.db
+__pycache__/
+.env
+.env.local
